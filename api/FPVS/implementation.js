@@ -102,7 +102,8 @@
             // them to the WebExtension by emitting a custom event (this is an EventEmitter)
             // with the information/parameters we want to send to the WebExtension event
             // listeners.
-            let win = event.target.ownerGlobal;
+            console.log(event);
+            let win = event.target?.ownerGlobal;
             log(event.type);
             switch (event.type) {
                 case "mouseout":
@@ -113,8 +114,17 @@
                     );
                     break;
                 case "dragend":
-                    if (event.target.id == "folderPaneHeader") {
+                    if (event.target && event.target.id == "folderPaneHeader") {
                         windowListener.emit("dragdrop", win, "onDragDrop");
+                    } else {
+                        windowListener.emit(
+                            "dragdrop",
+                            event.source,
+                            `onDragCanceled - ${JSON.stringify({
+                                ...event,
+                                source: "<the window>"
+                            })}`
+                        );
                     }
                     break;
                 case "dragenter":
@@ -134,10 +144,22 @@
                 case "dragleave":
                     windowListener.emit("dragdrop", win, "onDragLeave");
                     break;
+                case "mouseup":
+                    windowListener.emit("dragdrop", win, "onMouseUp");
+                    break;
                 default:
-                    throw new Error(
-                        `Encountered unknown event <${event.type}>`
-                    );
+                    try {
+                        console.log(`>> props: ${Object.keys(event)}`);
+                        const errorMessage = `Encountered unknown event <${
+                            event.type
+                        }>, '${JSON.stringify({
+                            ...event,
+                            source: "<some window>"
+                        })}'`;
+                        console.error(`>> ${errorMessage}`);
+                    } catch (e) {
+                        console.error(e);
+                    }
             }
         }
 
@@ -177,6 +199,18 @@
                         //folderPaneHeader.addEventListener("dragover", () => { log("tree dragover"); }, false);
                         //folderTree.addEventListener("drop", () => { log("tree drop"); }, false);
                         //folderTree.addEventListener("dragend", () => { log("tree dragend"); }, false);
+                        //window.addEventListener("mouseup", windowListener, false);
+
+                        window.addEventListener(
+                            "dragend",
+                            (event) =>
+                                windowListener.handleEvent({
+                                    ...event,
+                                    type: "dragend",
+                                    source: window
+                                }),
+                            false
+                        );
 
                         let folderTree =
                             window.document.getElementById("folderTree");
@@ -288,12 +322,12 @@
                             );
 
                             if (version < 115) {
-                            try {
-                                ready = mail3Pane.gFolderTreeView.isInited;
-                            } catch (e) {
-                                log("treeIsReady Err", e.message);
-                            }
-                            log("treeIsReady", ready);
+                                try {
+                                    ready = mail3Pane.gFolderTreeView.isInited;
+                                } catch (e) {
+                                    log("treeIsReady Err", e.message);
+                                }
+                                log("treeIsReady", ready);
                             } else {
                                 // const tabmail =
                                 //     mail3Pane.document.getElementById(
@@ -361,8 +395,8 @@
                         const version = findThunderbirdVersion(mail3Pane);
                         if (version < 115) {
                             const modes = mail3Pane.gFolderTreeView.activeModes;
-                        log("modes", modes);
-                        return modes;
+                            log("modes", modes);
+                            return modes;
                         } else {
                             const the3pane = await this.getAny3Pane();
                             if (!the3pane.folderPane) {
@@ -417,9 +451,9 @@
 
                         const version = findThunderbirdVersion(mail3Pane);
                         if (version < 115) {
-                        let allViews = mail3Pane.gFolderTreeView._modeNames;
-                        log("allModes", allViews);
-                        return allViews;
+                            let allViews = mail3Pane.gFolderTreeView._modeNames;
+                            log("allModes", allViews);
+                            return allViews;
                         } else {
                             const the3Pane = this.getAny3Pane();
                             const viewModes = Object.keys(
@@ -573,7 +607,7 @@
                             ).window;
                         const version = findThunderbirdVersion(mail3Pane);
                         if (version < 115) {
-                        mail3Pane.gFolderTreeView.activeModes = view;
+                            mail3Pane.gFolderTreeView.activeModes = view;
                         } else {
                             const the3pane = get_about_3pane(mail3Pane);
                             the3pane.folderPane.activeModes = view;
@@ -611,7 +645,8 @@
                                 return fire.async(
                                     windowId,
                                     dragDropEventName,
-                                    extraData
+                                    extraData,
+                                    emitter
                                 );
                             }
 

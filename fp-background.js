@@ -135,31 +135,31 @@ async function manipulateWindow(wnd, i18n) {
 
     const version = findThunderbirdVersion(window);
     if (version < 115) {
-    await messenger.FPVS.initFolderPaneOptionsPopup(windowId);
+        await messenger.FPVS.initFolderPaneOptionsPopup(windowId);
 
-    await messenger.LegacyMenu.add(windowId, {
-        id: "FolderPaneSwitcher-forward-arrow-button",
-        type: "toolbarButton",
-        reference: "folderPaneOptionsButton",
-        position: "before",
-        label: "",
-        image: "content/right-arrow.png",
-        tooltip: i18n.nextButtonLabel || "Next View",
-        className: "button-flat",
-        tabIndex: 0
-    });
+        await messenger.LegacyMenu.add(windowId, {
+            id: "FolderPaneSwitcher-forward-arrow-button",
+            type: "toolbarButton",
+            reference: "folderPaneOptionsButton",
+            position: "before",
+            label: "",
+            image: "content/right-arrow.png",
+            tooltip: i18n.nextButtonLabel || "Next View",
+            className: "button-flat",
+            tabIndex: 0
+        });
 
-    await messenger.LegacyMenu.add(windowId, {
-        id: "FolderPaneSwitcher-back-arrow-button",
-        type: "toolbarButton",
-        reference: "FolderPaneSwitcher-forward-arrow-button",
-        position: "before",
-        label: "",
-        image: "content/left-arrow.png",
-        tooltip: i18n.backButtonLabel || "Previous View",
-        className: "button-flat",
-        tabIndex: 0
-    });
+        await messenger.LegacyMenu.add(windowId, {
+            id: "FolderPaneSwitcher-back-arrow-button",
+            type: "toolbarButton",
+            reference: "FolderPaneSwitcher-forward-arrow-button",
+            position: "before",
+            label: "",
+            image: "content/left-arrow.png",
+            tooltip: i18n.backButtonLabel || "Previous View",
+            className: "button-flat",
+            tabIndex: 0
+        });
     } else {
     }
 }
@@ -371,6 +371,8 @@ var FolderPaneSwitcher = {
             //log("cachedmode", FolderPaneSwitcher.windowData.get(windowId).cachedView);
             FolderPaneSwitcher.setSingleMode(windowId, "all");
 
+            FolderPaneSwitcher.windowData.get(windowId).isDragMode = true;
+
             //     FolderPaneSwitcher.windowData.get(windowId).timer = 0;
             FolderPaneSwitcher.windowData.get(windowId).watchTimer =
                 window.setTimeout(
@@ -436,7 +438,11 @@ var FolderPaneSwitcher = {
     }
 };
 
-async function dragDropListener(windowId, event, type) {
+async function dragDropListener(windowId, event, type, emitter) {
+    console.log(
+        `dragDropListener: '${event}', unhandled w/ type '${type}' - emiited by ${emitter}`
+    );
+
     // type is currently ignored by all consumers.
     switch (event) {
         case "onDragDrop":
@@ -446,6 +452,7 @@ async function dragDropListener(windowId, event, type) {
             FolderPaneSwitcher.onDragDrop(windowId, { type: "onDragLeave" });
             break;
         case "onDragLeaveFolderPane":
+        case "onDragCanceled":
             FolderPaneSwitcher.onDragLeaveFolderPane(windowId, {
                 type: "onDragLeaveFolderPane"
             });
@@ -456,6 +463,8 @@ async function dragDropListener(windowId, event, type) {
         case "folderListener": //this replaces an event indicating that the message/folder drop is finished
             //log("bgr folderListener", info.type);//, info.folder);
             FolderPaneSwitcher.onDragDrop(windowId, { type });
+            break;
+        default:
             break;
     }
 }
@@ -520,7 +529,7 @@ async function main() {
     // });
 
     if (version < 115) {
-    messenger.FPVS.onDragDrop.addListener(dragDropListener);
+        messenger.FPVS.onDragDrop.addListener(dragDropListener);
     }
 }
 

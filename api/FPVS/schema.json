@@ -208,6 +208,11 @@
                         "name": "data",
                         "type": "string",
                         "description": "Some additional data"
+                    },
+                    {
+                        "name": "emitter",
+                        "type": "string",
+                        "optional": true
                     }
                 ]
             }
